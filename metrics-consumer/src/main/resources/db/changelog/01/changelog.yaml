@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - include:
+        file: db/changelog/01/changelog-metrics.yaml
+  - include:
+      file: db/changelog/01/changelog-tags.yaml
+  - include:
+      file: db/changelog/01/changelog-tag-values.yaml
+  - include:
+      file: db/changelog/01/changelog-measurements.yaml

@@ -1,0 +1,54 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: METRICS-PRODUCER
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+  sql:
+    init:
+      mode: always
+
+  cloud:
+    openfeign:
+      client:
+        config:
+          actuator-service:
+            url: http://metrics-producer:8081
+
+  kafka:
+    producer:
+      bootstrap-servers: http://kafka:29092
+
+message.topic.name: metrics-topic
+
+logging:
+  level:
+    com:
+      example: debug
+    org:
+      springframework:
+        orm:
+          jpa: info
+        transaction: info
+        web: info
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,liquibase,mappings,metrics

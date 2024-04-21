@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-table-tag-values
+      author: liquibase
+      preConditions:
+        - onFail:
+          not:
+            tableExists:
+              tableName: tag_values
+      changes:
+        - createTable:
+            tableName: tag_values
+            columns:
+              - column:
+                  name: tags_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_tag_values_to_tags
+                    references: tags(tags_id)
+                    deleteCascade: true
+                    nullable: false
+              - column:
+                  name: values
+                  type: varchar(2048)

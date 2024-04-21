@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-table-metrics
+      author: liquibase
+      preConditions:
+        - onFail:
+          not:
+            tableExists:
+              tableName: metrics
+      changes:
+        - createTable:
+            tableName: metrics
+            columns:
+              - column:
+                  name: metrics_id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: metrics_name
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: metrics_description
+                  type: varchar(2048)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: metrics_base_unit
+                  type: varchar(512)
+
+        - createSequence:
+            sequenceName: SEQ_METRIC
+            startValue: 1
+            incrementBy: 10

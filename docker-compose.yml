@@ -1,0 +1,112 @@
+version: '3.6'
+
+networks:
+  kafka-net:
+    name: kafka-net
+    driver: bridge
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    restart: on-failure
+    networks:
+      - kafka-net
+    ports:
+      - 22181:2181
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    restart: on-failure
+    networks:
+      - kafka-net
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_LISTENERS: DOCKER_INTERNAL://:29092,DOCKER_EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: DOCKER_INTERNAL://kafka:29092,DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: DOCKER_INTERNAL:PLAINTEXT,DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    container_name: kafdrop
+    restart: on-failure
+    networks:
+      - kafka-net
+    ports:
+      - 9090:9000
+    environment:
+      KAFKA_BROKERCONNECT: kafka:29092
+    depends_on:
+      - kafka
+
+  metrics-producer:
+    build: metrics-producer
+    image: metrics-producer
+    container_name: metrics-producer-container
+    networks:
+      - kafka-net
+    ports:
+      - 8081:8081
+    depends_on:
+      - metrics-producer-db
+      - kafka
+    restart: on-failure
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://metrics-producer-db:5432/db_item
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+
+  metrics-producer-db:
+    image: postgres:16-alpine
+    container_name: metrics-producer-db-container
+    volumes:
+      - /var/lib/postgresql/data/
+    networks:
+      - kafka-net
+    ports:
+      - 6541:5432
+    environment:
+      - POSTGRES_DB=db_item
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+
+  metrics-consumer:
+    build: metrics-consumer
+    image: metrics-consumer
+    container_name: metrics-consumer-container
+    networks:
+      - kafka-net
+    ports:
+      - 8082:8082
+    depends_on:
+      - metrics-consumer-db
+      - kafka
+    restart: on-failure
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://metrics-consumer-db:5432/db_metric
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+
+  metrics-consumer-db:
+    image: postgres:16-alpine
+    container_name: metrics-consumer-db-container
+    volumes:
+      - /var/lib/postgresql/data/
+    networks:
+      - kafka-net
+    ports:
+      - 6542:5432
+    environment:
+      - POSTGRES_DB=db_metric
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
